@@ -40,7 +40,11 @@ jobs:
       - name: 构建静态站点
         run: npm run build:web
 
+      # enablement: true —— 仓库刚建、Pages 还没开时自动开启（Source 设为 GitHub Actions），
+      # 否则 configure-pages 会因为 "Get Pages site failed" 直接失败，必须先去 settings/pages 手点一次。
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: packages/web/dist
