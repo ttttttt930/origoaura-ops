@@ -40,6 +40,9 @@ const PARAMS: TaxParams = {
   citStatutoryRate: 0.25,
   citSmallMicroThreshold: 3000000,
   dividendTaxRate: 0.2,
+  generalRegThreshold: 5_000_000,
+  thresholdWarnRatio: 0.8,
+  latePenaltyDailyRate: 0.0005,
 };
 
 interface GoldenCase {

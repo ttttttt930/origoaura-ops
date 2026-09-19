@@ -6,3 +6,4 @@ export * from './stamp.ts';
 export * from './cit.ts';
 export * from './dividend.ts';
 export * from './scenario.ts';
+export * from './taxpayerStatus.ts';

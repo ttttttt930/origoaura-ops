@@ -16,13 +16,39 @@ import {
   deriveCosts,
   dividendScenarios,
   toCostBreakdown,
+  taxpayerStatus,
   type TaxpayerType,
   type TaxScenarioResult,
 } from '@origo/core';
 import type { ViewContext } from '../state.ts';
-import { h, card, sectionHead, table, notes, tag, kv, money, formatPct } from '../ui/dom.ts';
+import { h, badge, card, sectionHead, table, notes, tag, kv, money, formatPct } from '../ui/dom.ts';
 import { donut, waterfallChart } from '../ui/charts.ts';
 import { periodResult } from './shared.ts';
+
+/** 由日流水汇总出月度**含税**销售额（滚动 12 个月合规判定的输入） */
+function monthlySales(daily: readonly { date: string; revenue: number }[]): {
+  month: string;
+  revenue: number;
+}[] {
+  const map = new Map<string, number>();
+  for (const d of daily) {
+    const m = d.date.slice(0, 7);
+    map.set(m, (map.get(m) ?? 0) + d.revenue);
+  }
+  return [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, revenue]) => ({ month, revenue }));
+}
+
+/** 合规状态 → 徽标（颜色即风险等级，不用文字让读者自己判断） */
+const STATUS_META: Record<string, { label: string; kind: 'ok' | 'warn' | 'danger' | 'info' }> = {
+  small_ok: { label: '小规模 · 合法', kind: 'ok' },
+  near_threshold: { label: '临界预警', kind: 'warn' },
+  must_register: { label: '须登记一般纳税人', kind: 'danger' },
+  general_overdue: { label: '逾期未登记', kind: 'danger' },
+  general_registered: { label: '已登记一般纳税人', kind: 'info' },
+  exempt: { label: '法定例外', kind: 'info' },
+};
 
 /** 情景开关（页面级状态，不进内核 —— 内核只按传入参数算） */
 const scenario: { taxpayer: TaxpayerType; payoutRatio: number } = {
@@ -53,6 +79,19 @@ export function renderFinance(ctx: ViewContext): Node {
     period: { kind: 'month', start: r.window.start, end: r.window.end },
     payoutRatio: scenario.payoutRatio,
   });
+
+  /**
+   * 纳税人身份**合规判定**（法定，不是情景开关）。
+   * 上面的「纳税人身份」是"假如选它，税是多少"的测算；这里是"法律允许你选哪个"。
+   * 两者必须同时呈现，否则测算会被误读成可以自由选择。
+   */
+  const compliance = taxpayerStatus({
+    monthly: monthlySales(s.daily),
+    entityType: 'company',
+    alreadyGeneral: scenario.taxpayer === 'general',
+    params: s.taxParams,
+  });
+  const meta = STATUS_META[compliance.status] ?? { label: compliance.status, kind: 'info' as const };
 
   return h(
     'div',
@@ -110,6 +149,43 @@ export function renderFinance(ctx: ViewContext): Node {
         ),
         h('p', { class: 'card__note' }, `分红个税率 ${formatPct(s.taxParams.dividendTaxRate * 100, 0)}，只在实际分红时发生。`),
       ),
+    ),
+
+    h(
+      'section',
+      { class: 'section' },
+      sectionHead(
+        '纳税人身份合规（法定）',
+        '滚动 12 个月累计应征增值税销售额超过 500 万元，有限公司必须登记为一般纳税人',
+      ),
+      card(
+        h(
+          'div',
+          { class: 'chips-inline', style: { marginBottom: '10px' } },
+          badge(meta.label, meta.kind),
+          compliance.insufficientWindow
+            ? tag(`窗口仅 ${compliance.monthsCovered}/12 个月有数据`, 'est')
+            : tag('窗口完整 12 个月', 'ok'),
+        ),
+        kv([
+          ['滚动 12 个月不含税销售额', money(compliance.rolling12m)],
+          ['强制登记线', money(s.taxParams.generalRegThreshold)],
+          ['距登记线余量', compliance.headroom >= 0 ? money(compliance.headroom) : `已超出 ${money(-compliance.headroom)}`],
+          ['占登记线', formatPct(compliance.ratio * 100)],
+          [
+            '超标时点 / 生效日',
+            compliance.crossing
+              ? `${compliance.crossing.month}（生效 ${compliance.crossing.effectiveDate}，最迟办理 ${compliance.crossing.registerDeadline}）`
+              : '—',
+          ],
+        ]),
+        h('p', { class: 'card__note' }, compliance.message),
+      ),
+      notes([
+        '判定依据：《增值税法》第九条 + 国家税务总局公告 2026 年第 2 号。窗口为**连续不超过 12 个月**、含未取得销售收入的月份，不是自然年。',
+        '「纳税人身份」开关是**测算**；本卡片是**法定约束**。身份不合法时，省税的那套数字没有意义。',
+        '本页为经营测算参考，不替代税务师的正式申报与汇算清缴。',
+      ]),
     ),
 
     h(

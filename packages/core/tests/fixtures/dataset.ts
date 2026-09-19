@@ -259,6 +259,9 @@ export function taxParams(): TaxParams {
     citStatutoryRate: 0.25,
     citSmallMicroThreshold: 3_000_000,
     dividendTaxRate: 0.2,
+    generalRegThreshold: 5_000_000,
+    thresholdWarnRatio: 0.8,
+    latePenaltyDailyRate: 0.0005,
   };
 }
 

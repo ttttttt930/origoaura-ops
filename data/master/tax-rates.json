@@ -19,5 +19,8 @@
   "citSmallMicroRate": 0.05,
   "citStatutoryRate": 0.25,
   "citSmallMicroThreshold": 3000000,
-  "dividendTaxRate": 0.2
+  "dividendTaxRate": 0.2,
+  "generalRegThreshold": 5000000,
+  "thresholdWarnRatio": 0.8,
+  "latePenaltyDailyRate": 0.0005
 }
