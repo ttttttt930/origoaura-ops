@@ -40,8 +40,11 @@ jobs:
       - name: 构建静态站点
         run: npm run build:web
 
-      # enablement: true —— 仓库刚建、Pages 还没开时自动开启（Source 设为 GitHub Actions），
-      # 否则 configure-pages 会因为 "Get Pages site failed" 直接失败，必须先去 settings/pages 手点一次。
+      # enablement: true 只在有建站权限时才有用。
+      # 实测：个人账号下 GITHUB_TOKEN 无权创建 Pages 站点（GET /pages 返回 404，
+      # 本步骤报 "Get Pages site failed"），因此**首次必须人工开启一次**：
+      #   Settings → Pages → Build and deployment → Source 选「GitHub Actions」
+      # 开启后本步骤与后续部署都会正常通过。
       - uses: actions/configure-pages@v5
         with:
           enablement: true
