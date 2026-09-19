@@ -46,13 +46,33 @@ export function excelSerialToISO(serial: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
+/**
+ * Date 对象 → 'YYYY-MM-DD'（按**本地**日历日）。
+ *
+ * 不能直接用 toISOString()：SheetJS 用 `cellDates: true` 产出的 Date 是本地时区的，
+ * 且带亚秒级漂移（实测 2026-02-28 会变成 `2026-02-27T23:59:17+08:00`）。
+ * toISOString() 先被漂移拉回前一天、再被 +08:00 转 UTC 拉回前一天，
+ * 结果 2/3/4/5 月整批日期集体少一天 —— 表现为「5 月 31 日缺失」+「1 月 31 日重复」。
+ *
+ * 做法：先把时间推到当天中午（吃掉 ±12h 内的漂移），再归零到当天本地午夜，取本地 Y/M/D。
+ */
+export function localDateToISO(d: Date): string {
+  const t = new Date(d.getTime());
+  t.setHours(t.getHours() + 12); // 推到次日凌晨或当天中午，消除亚秒漂移
+  t.setHours(0, 0, 0, 0); // 回到该日历日的本地午夜
+  const y = t.getFullYear();
+  const m = String(t.getMonth() + 1).padStart(2, '0');
+  const day = String(t.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /** 把任意日期单元格解析成 'YYYY-MM-DD'；无法解析返回 null（不猜） */
 export function parseDateCell(v: unknown, fmt: 'auto' | 'excel-serial' | 'iso' = 'auto'): string | null {
   if (v === null || v === undefined || v === '') return null;
 
   if (v instanceof Date) {
     if (Number.isNaN(v.getTime())) return null;
-    return v.toISOString().slice(0, 10);
+    return localDateToISO(v);
   }
 
   if (typeof v === 'number' && Number.isFinite(v)) {
