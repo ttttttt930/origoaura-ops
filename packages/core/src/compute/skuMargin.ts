@@ -18,7 +18,7 @@ import type {
   SkuMargin,
   SkuMaster,
 } from '../model/sku.ts';
-import { SKU_DAILY_GAP, SKU_MASTER_GAP, COST_POLICY_GAP } from '../model/sku.ts';
+import { SKU_DAILY_GAP, SKU_MASTER_GAP, COST_POLICY_GAP, cogsUnitCost } from '../model/sku.ts';
 import type { CostPolicy } from '../model/finance.ts';
 import { allocatePromotion } from './allocation.ts';
 
@@ -73,7 +73,12 @@ export function computeSkuMargins(
   const masterBySku = new Map<string, SkuMaster>();
   for (const m of skuMaster) masterBySku.set(m.sku, m);
 
-  const rows = skuDaily.filter((r) => r.date >= from && r.date <= to);
+  // 先剔除主数据里没有的 SKU —— 否则它们会参与推广费分摊、分走一笔预算，
+  // 随后又在输出时被 `continue` 丢掉，导致「平台内分摊合计 < 池子」（可对账性被破坏）。
+  // 未映射 SKU 由 DQ 规则 SKU_UNMAPPED 单独告警。
+  const rows = skuDaily.filter(
+    (r) => r.date >= from && r.date <= to && masterBySku.has(r.sku),
+  );
   if (!rows.length) return SKU_DAILY_GAP;
 
   // ---- 1) 按 sku × platform 归组 ----
@@ -140,13 +145,14 @@ export function computeSkuMargins(
   // ---- 3) 逐格计算 ----
   const out: SkuMargin[] = [];
   for (const [key, c] of cells) {
-    const master = masterBySku.get(c.sku);
-    if (!master) continue; // 未映射 SKU 由 DQ 规则 SKU_UNMAPPED 报 warn，这里不计入毛利
+    // rows 已在上面过滤过，这里必定命中；保留断言防止后续改动重新引入「分摊漏算」
+    const master = masterBySku.get(c.sku)!;
 
     const revenue = round2(c.revenue);
     const refund = round2(c.refund);
-    // 真实 BOM：单瓶成本 × 瓶数。这里**不引入任何估算**
-    const cogs = round2(master.unitCost * c.qty);
+    // 真实 BOM：单瓶成本 × 瓶数。这里**不引入任何估算**。
+    // 取 COGS 口径（不含试香卡）：试香卡是获客物料，计入会系统性低估毛利。
+    const cogs = round2(cogsUnitCost(master) * c.qty);
     const commission = round2(revenue * (commissionRate[c.platform] ?? 0));
     const paymentFee = round2(revenue * costPolicy.paymentFeeRate);
     const orders = Math.round(c.qty * ordersPerUnit);

@@ -16,6 +16,7 @@
 import type { DailyRecord, ISODate, TotalRecord } from '../model/daily.ts';
 import { round2 } from '../model/daily.ts';
 import type { SkuMaster } from '../model/sku.ts';
+import { cogsUnitCost } from '../model/sku.ts';
 
 export type PeriodKind = 'today' | 'week' | 'month' | 'year' | 'all';
 
@@ -124,7 +125,15 @@ function dayCount(start: ISODate, end: ISODate): number {
   return Math.round((toDate(end).getTime() - toDate(start).getTime()) / DAY_MS) + 1;
 }
 
-/** 综合单瓶物料成本 —— 有 estMonthlyQty 则按其加权，否则等权。始终标记为估算。 */
+/**
+ * 综合单瓶物料成本 —— 有 estMonthlyQty 则按其加权，否则等权。始终标记为估算。
+ *
+ * 口径：**损益表用 COGS 口径**（不含试香卡）。采购付款额请看 blendedPurchaseUnitCost，
+ * 两者不可混用 —— 混用就是 V9→V10 那次成本漂移的根因。
+ *
+ * 加权用**未舍入**的逐 SKU 成本累加、最后只 round 一次：先 round 单瓶再加权会产生
+ * 二次舍入偏差（实测 14.59 会被压成 14.58）。
+ */
 export function blendedUnitCost(skuMaster: readonly SkuMaster[]): {
   value: number;
   estimated: true;
@@ -134,11 +143,25 @@ export function blendedUnitCost(skuMaster: readonly SkuMaster[]): {
   if (!active.length) return { value: 0, estimated: true, basis: 'equal-weight' };
   const totalQty = active.reduce((a, s) => a + (s.estMonthlyQty ?? 0), 0);
   if (totalQty > 0) {
-    const v = active.reduce((a, s) => a + s.unitCost * (s.estMonthlyQty ?? 0), 0) / totalQty;
+    const v = active.reduce((a, s) => a + cogsUnitCost(s) * (s.estMonthlyQty ?? 0), 0) / totalQty;
     return { value: round2(v), estimated: true, basis: 'weighted-by-est-qty' };
   }
-  const v = active.reduce((a, s) => a + s.unitCost, 0) / active.length;
+  const v = active.reduce((a, s) => a + cogsUnitCost(s), 0) / active.length;
   return { value: round2(v), estimated: true, basis: 'equal-weight' };
+}
+
+/**
+ * 综合单瓶**采购成本**（全口径，含试香卡）—— 采购预算 / 现金流 / 供应商集中度用这个。
+ * 与 blendedUnitCost 的差异就是小样那部分钱：真实要付，但不构成商品成本。
+ */
+export function blendedPurchaseUnitCost(skuMaster: readonly SkuMaster[]): number {
+  const active = skuMaster.filter((s) => s.status === 'active');
+  if (!active.length) return 0;
+  const totalQty = active.reduce((a, s) => a + (s.estMonthlyQty ?? 0), 0);
+  if (totalQty > 0) {
+    return round2(active.reduce((a, s) => a + s.unitCost * (s.estMonthlyQty ?? 0), 0) / totalQty);
+  }
+  return round2(active.reduce((a, s) => a + s.unitCost, 0) / active.length);
 }
 
 /** 按日期升序排列的**全部**日期列表（含模板空行） */

@@ -88,56 +88,74 @@ function paint(): void {
   mount(host, shell(state));
 }
 
-function navItem(id: ViewId, active: ViewId, onPick: (v: ViewId) => void): HTMLElement {
-  const meta = viewMeta(id);
-  return h(
-    'button',
-    {
-      class: 'navitem',
-      'aria-current': String(id === active),
-      dataset: { mod: id },
-      onclick: () => onPick(id),
-    },
-    h('span', { class: 'navitem__ico' }, meta.icon),
-    h('span', {}, meta.label),
-  );
-}
-
 function shell(s: AppState): HTMLElement {
   const meta = viewMeta(s.view);
   const pick = (v: ViewId): void => ctx().setView(v);
 
-  const side = h(
-    'aside',
-    { class: 'side' },
+  // 顶部栏（飞书风）：蓝色方形 logo + 标题 + 右侧动作
+  const topbar = h(
+    'header',
+    { class: 'ttop' },
+    h('div', { class: 'tt-logo' }, 'OA'),
     h(
       'div',
-      { class: 'side__brand' },
-      h('h1', {}, 'OrigoAura 经营看板'),
-      h('p', {}, 'v10 · single source of truth'),
+      { class: 'tt-titles' },
+      h('div', { class: 't1' }, 'OrigoAura 经营看板'),
+      h('div', { class: 't2' }, `v10 · single source of truth · 快照 ${s.snapshot.generatedAt.slice(0, 10)}`),
     ),
-    ...grouped('分析', s.view, pick),
-    ...grouped('经营', s.view, pick),
     h(
       'div',
-      { class: 'side__foot' },
-      h('div', {}, '口径全部来自 ', h('code', {}, '@origo/core')),
-      h('div', {}, '界面不写业务公式'),
-      h('div', {}, `快照 ${s.snapshot.generatedAt.slice(0, 10)}`),
+      { class: 'tt-actions' },
       h(
-        'div',
-        { style: { marginTop: '8px' } },
-        h(
-          'button',
-          {
-            class: 'chip',
-            onclick: () => {
-              sessionStorage.removeItem(PW_KEY);
-              reloadFn();
-            },
+        'button',
+        {
+          class: 'btn',
+          title: '在 classic（飞书蓝）与 warm（米金暖调）之间切换',
+          onclick: () => {
+            const cur = document.documentElement.getAttribute('data-theme');
+            const next = cur === 'warm' ? 'classic' : 'warm';
+            document.documentElement.setAttribute('data-theme', next);
+            try {
+              localStorage.setItem(THEME_KEY, next);
+            } catch {
+              /* 隐私模式下 localStorage 不可用，忽略即可 */
+            }
           },
-          '换口令 / 重新解锁',
-        ),
+        },
+        '🎨 换肤',
+      ),
+      h(
+        'button',
+        {
+          class: 'btn',
+          onclick: () => {
+            sessionStorage.removeItem(PW_KEY);
+            reloadFn();
+          },
+        },
+        '换口令 / 重新解锁',
+      ),
+    ),
+  );
+
+  // 模块导航：横向 tab（沿用 V9 老看板的信息架构）
+  const modnav = h(
+    'nav',
+    { class: 'modnav' },
+    ...VIEW_META.map((v) =>
+      h(
+        'a',
+        {
+          class: v.id === s.view ? 'on' : '',
+          dataset: { mod: v.id },
+          href: `#/${v.id}`,
+          onclick: (e: Event) => {
+            e.preventDefault();
+            pick(v.id);
+          },
+        },
+        h('span', { class: 'ico' }, v.icon),
+        h('span', {}, v.label),
       ),
     ),
   );
@@ -163,13 +181,13 @@ function shell(s: AppState): HTMLElement {
 
   const main = h(
     'main',
-    { class: 'main' },
+    { class: 'content' },
     h(
       'div',
-      { class: 'topbar' },
+      { class: 'page-head' },
       h(
         'div',
-        { class: 'topbar__title' },
+        {},
         h('h2', {}, meta.label),
         h('p', {}, meta.blurb),
       ),
@@ -179,14 +197,21 @@ function shell(s: AppState): HTMLElement {
     h('div', { class: 'view' }, RENDERERS[s.view](ctx())),
   );
 
-  return h('div', { class: 'shell' }, side, main);
-}
-
-function grouped(group: string, active: ViewId, pick: (v: ViewId) => void): HTMLElement[] {
-  const items = VIEW_META.filter((v) => v.group === group);
-  if (!items.length) return [];
-  return [h('div', { class: 'side__group' }, group), ...items.map((v) => navItem(v.id, active, pick))];
+  return h('div', { class: 'app-root' }, topbar, modnav, main);
 }
 
 /** 会话内缓存口令，刷新页面不必重复输入（不落 localStorage，关标签即失效） */
 export const PW_KEY = 'origo.snapshot.password';
+/** 皮肤偏好（classic / warm），落 localStorage；不可用时退回默认 classic */
+export const THEME_KEY = 'origo.theme';
+
+/** 在首帧前应用皮肤，避免闪一下默认色再跳到暖调 */
+export function applyStoredTheme(): void {
+  let theme = 'classic';
+  try {
+    theme = localStorage.getItem(THEME_KEY) ?? 'classic';
+  } catch {
+    /* 隐私模式：保持默认 */
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+}

@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   aggregate,
   aggregatePeriod,
+  blendedPurchaseUnitCost,
   blendedUnitCost,
   buildPeriodPair,
   buildWindow,
   heroCards,
+  round2,
 } from '../src/index.ts';
-import { buildDay, septemberRecords, skuMaster, TODAY } from './fixtures/dataset.ts';
+import { buildDay, septemberRecords, skuMaster, SKU_MASTER_BASELINE, TODAY } from './fixtures/dataset.ts';
 
 /** 覆盖 2026-09-01 ~ 09-30 的完整月 */
 function fullSeptember() {
@@ -96,15 +98,26 @@ describe('综合单瓶物料成本', () => {
   it('按月销预估加权（不是等权），且永远标记为估算', () => {
     const r = blendedUnitCost(skuMaster());
     expect(r.basis).toBe('weighted-by-est-qty');
-    expect(r.value).toBeCloseTo(16.79, 2);
+    // COGS 口径（不含试香卡）—— 与 V9 历史口径 ¥14.59 对齐
+    expect(r.value).toBeCloseTo(SKU_MASTER_BASELINE.weightedUnitCostCogs, 2);
     expect(r.estimated).toBe(true);
+  });
+
+  it('采购口径加权值 = 综合单瓶 + 小样均摊（两个口径差 ¥0.32/瓶）', () => {
+    const cogs = blendedUnitCost(skuMaster()).value;
+    const purchase = blendedPurchaseUnitCost(skuMaster());
+    expect(purchase).toBeCloseTo(SKU_MASTER_BASELINE.weightedUnitCost, 2);
+    expect(purchase).toBeGreaterThan(cogs);
+    expect(round2(purchase - cogs)).toBeCloseTo(0.32, 2);
   });
 
   it('无月销预估时退化为等权并如实标注', () => {
     const noEst = skuMaster().map((s) => ({ ...s, estMonthlyQty: undefined }));
     const r = blendedUnitCost(noEst);
     expect(r.basis).toBe('equal-weight');
-    expect(r.value).toBeCloseTo((14.59 + 23.08 + 13.72 + 15.4 + 16.8) / 5, 2);
+    const expected =
+      (11.41 + 14.63 + 11.37 + 11.37 + 23.08 + 10.67 + 10.57) / 7;
+    expect(r.value).toBeCloseTo(expected, 2);
   });
 
   it('无在售 SKU 时返回 0 而非 NaN', () => {
@@ -123,10 +136,11 @@ describe('聚合与 Hero 卡片', () => {
     expect(m.refund).toBe(50);
     expect(m.promotion).toBe(200);
     expect(m.qty).toBe(10);
-    expect(m.materialCost).toBeCloseTo(16.79 * 10, 2);
-    expect(m.realProfit).toBeCloseTo(1000 - 167.9 - 200, 2);
+    // 物料走 COGS 口径 ¥14.59/瓶
+    expect(m.materialCost).toBeCloseTo(14.59 * 10, 2);
+    expect(m.realProfit).toBeCloseTo(1000 - 145.9 - 200, 2);
     expect(m.cashback).toBeCloseTo(1000 - 200 - 50, 2);
-    expect(m.realRoi).toBeCloseTo(1000 / (167.9 + 200), 2);
+    expect(m.realRoi).toBeCloseTo(1000 / (145.9 + 200), 2);
     expect(m.roi).toBeCloseTo(5, 2);
     expect(m.aov).toBe(100);
     expect(m.refundRate).toBe(5);

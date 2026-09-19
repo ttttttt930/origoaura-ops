@@ -28,6 +28,7 @@ docs/*.webm
 # 快照本身是加密的，但这几份是**明文**，且被公开仓索引后无法收回。
 # 管道在本机运行，这些文件留在本地即可；新环境用同目录的 *.example.json 起步。
 data/master/sku-bom.json
+data/master/sku-quotes.json
 data/master/platform-fees.json
 data/master/inventory.json
 data/master/targets.json

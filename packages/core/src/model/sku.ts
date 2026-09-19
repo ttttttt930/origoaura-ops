@@ -16,8 +16,24 @@ export interface SkuMaster {
   sku: string;
   spec: string;
   productLine: string;
-  /** 含包装单位成本（BOM 核定值，元/瓶） */
+  /** 全口径单瓶物料成本（BOM 核定值，元/瓶）—— **含**试香卡等小样 */
   unitCost: number;
+  /**
+   * COGS 口径单瓶物料成本（元/瓶）—— **不含**试香卡/小样/一次性备案费。
+   *
+   * 为什么要拆两个口径（成本核算的关键修正）：
+   *   试香卡随每瓶发出，但它本质是**获客物料**而非商品实体；把它算进 COGS 会
+   *   系统性压低毛利率。V9 历史口径（综合单瓶 ¥14.59）就是不含试香卡的；
+   *   V10 迁移后误用全口径 ¥16.79，两者差 ¥2.20/瓶，直接导致毛利结论失真。
+   *   采购付款看 unitCost（真金白银要付），损益表看 unitCostCogs。
+   *
+   * 缺省时回落到 unitCost（老主数据没有该字段），调用方无需分支判断。
+   */
+  unitCostCogs?: number;
+  /** 商品定位（如 'Bleu Absent 主推' / '限定款'） */
+  position?: string;
+  /** 上市月份（YYYY-MM） */
+  launchDate?: string;
   bom: BomLine[];
   /** 参考售价；可被实际成交均价覆盖 */
   defaultPrice?: number;
@@ -50,6 +66,46 @@ export interface BomLine {
   supplier?: string;
   /** 是否属于"小样/试香"类，通常不计入物料成本 */
   isSample?: boolean;
+  /** 一次性费用（如香水备案），不是单瓶物料，不计入任何单瓶成本 */
+  isOneOff?: boolean;
+  /**
+   * 该组件的全部候选供应商报价（由 sync-sku-master.mjs 从 product_quotes 导出）。
+   * 保留全部候选而不是只留选中的那个 —— 取价策略是**假设**，假设必须可审计（C7）。
+   */
+  quotes?: BomQuote[];
+  /** 该行是否成功取到报价；false 表示按 0 计入，界面应标红 */
+  priced?: boolean;
+}
+
+export interface BomQuote {
+  supplier: string;
+  price: number;
+  spec?: string | null;
+  moq?: number | null;
+  leadDays?: number | null;
+}
+
+/**
+ * COGS 口径单瓶成本 —— 损益表唯一入口。
+ *
+ * 全仓**只允许**通过这个函数取单瓶成本，禁止直接写 `master.unitCost * qty`：
+ * 一旦有人绕过，就会重演"采购口径混进损益表"的漂移事故（eslint 有对应规则）。
+ */
+export function cogsUnitCost(m: SkuMaster): number {
+  return m.unitCostCogs ?? m.unitCost;
+}
+
+/**
+ * 物料毛利率 =（参考售价 − COGS 单瓶成本）/ 参考售价，返回 0..1。
+ *
+ * 落在内核而不是页面里：表现层禁止内联业务公式（SAD §8），
+ * 否则同一个"毛利率"会在多个页面算出多个值 —— 那正是 V9 的老毛病。
+ * 售价缺失或为 0 时返回 null（不是 0）：没有分母就不该给出数字。
+ */
+export function materialMarginRate(m: SkuMaster): number | null {
+  const price = m.defaultPrice ?? 0;
+  if (!price) return null;
+  return (price - cogsUnitCost(m)) / price;
 }
 
 /** SKU × 平台 × 日（V10 新增，可缺省） */

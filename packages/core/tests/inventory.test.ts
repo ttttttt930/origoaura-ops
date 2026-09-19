@@ -11,7 +11,7 @@ import { septemberRecords, skuDailyRecords, skuMaster, TODAY } from './fixtures/
 
 const items: InventoryItem[] = [
   { sku: '不在场50ml', onHand: 100, inTransit: 50, leadTimeDays: 7, safetyDays: 7, asOf: TODAY },
-  { sku: '暗戳戳50ml', onHand: 0, inTransit: 0, leadTimeDays: 10, safetyDays: 7, asOf: TODAY },
+  { sku: '暗戳戳100ml', onHand: 0, inTransit: 0, leadTimeDays: 10, safetyDays: 7, asOf: TODAY },
   { sku: '西西里白橘50ml', onHand: 200, inTransit: 0, leadTimeDays: 7, safetyDays: 5, asOf: TODAY },
   { sku: '绽放50ml', onHand: 300, inTransit: 0, leadTimeDays: 7, safetyDays: 7, asOf: TODAY },
 ];
@@ -41,7 +41,7 @@ describe('库存覆盖与补货建议', () => {
   it('断货 / 超储 / 健康 / 未知 四态判定', () => {
     const cov = inventoryCoverage(items, skuDailyRecords(), { today: TODAY });
     const bySku = Object.fromEntries(cov.map((c) => [c.sku, c]));
-    expect(bySku['暗戳戳50ml']!.status).toBe('stockout');
+    expect(bySku['暗戳戳100ml']!.status).toBe('stockout');
     expect(bySku['西西里白橘50ml']!.status).toBe('healthy');
     expect(bySku['绽放50ml']!.status).toBe('unknown');
     expect(bySku['绽放50ml']!.suggestedQty).toBe(0);
@@ -76,12 +76,13 @@ describe('库存覆盖与补货建议', () => {
 
   it('汇总按状态分桶并给出待补货金额', () => {
     const cov = inventoryCoverage(items, skuDailyRecords(), { today: TODAY });
+    // 补货金额按**采购口径**（含试香卡）：下单要真付这笔钱
     const cost = new Map(skuMaster().map((s) => [s.sku, s.unitCost]));
     const sum = inventorySummary(cov, (sku) => cost.get(sku) ?? 0);
     expect(sum.counts.stockout).toBe(1);
     expect(sum.counts.unknown).toBe(1);
     expect(sum.suggestedTotalQty).toBeGreaterThan(0);
-    expect(sum.attention).toContain('暗戳戳50ml');
+    expect(sum.attention).toContain('暗戳戳100ml');
     expect(sum.suggestedTotalAmount).toBeGreaterThan(0);
   });
 });

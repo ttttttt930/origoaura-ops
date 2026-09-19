@@ -18,6 +18,7 @@ import type { CostPolicy } from '../model/finance.ts';
 import type { DailyRecord, Platform } from '../model/daily.ts';
 import { round2 } from '../model/daily.ts';
 import type { SkuDaily, SkuMaster } from '../model/sku.ts';
+import { cogsUnitCost } from '../model/sku.ts';
 import type { CostBreakdown } from '../tax/types.ts';
 import type { PeriodWindow } from './aggregate.ts';
 import { aggregate } from './aggregate.ts';
@@ -71,8 +72,9 @@ export function deriveCosts(input: CostBreakdownInput): DerivedCosts {
   const assumptions: string[] = [];
 
   if (hasSku) {
+    // 损益表口径：COGS（不含试香卡）。采购口径请用 m.unitCost。
     const costOf = new Map<string, number>();
-    for (const m of skuMaster) costOf.set(m.sku, m.unitCost);
+    for (const m of skuMaster) costOf.set(m.sku, cogsUnitCost(m));
     material = 0;
     units = 0;
     for (const r of skuDaily ?? []) {

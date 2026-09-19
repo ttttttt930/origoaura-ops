@@ -20,11 +20,14 @@ packages/web       L6 静态 SPA（Vite + TS，GitHub Pages）
 
 ```bash
 npm ci
-npm run gate            # 类型检查 + lint + 测试（111 个）
+npm run gate            # 类型检查 + lint + 测试（140 个）
 npm run origo -- ingest data/raw/营销发展日报.xlsx   # 读原始表 → canonical（默认吃全部 N月汇总）
 npm run origo -- validate                            # 跑 DQ 闸门，有 block 则退出码 1
 npm run origo -- build                               # 校验通过后产出加密快照
 npm run build:web                                    # 构建 dist/
+
+npm run sku:sync        # 从源库重生成 SKU 主数据（禁止手改 JSON）
+npm run sku:check       # SKU 主数据漂移检测（--strict 源库缺失也算失败）
 ```
 
 ## 数据质量闸门
@@ -44,6 +47,38 @@ npm run build:web                                    # 构建 dist/
 > 7 月那个数字值得记一笔：某外部实现把带千分位的文本当成无法解析 → 置 0，
 > 于是 15 天平台收入凭空少计 ¥20,673.09。内核的 `parseNumeric()` 会剥掉千分位并标记
 > `coerced`，由 `CELL_FORMAT` 报 warn，绝不静默置 0（见 `packages/core/tests/cellformat.test.ts`）。
+
+## SKU 主数据：唯一事实源 + 漂移检测
+
+SKU 主数据（成本 / 售价 / 规格 / BOM）**只能由脚本从源库导出，禁止手改 JSON**。
+
+```
+营销发展日报.db（products · product_bom · product_quotes）
+        │  npm run sku:sync
+        ▼
+data/master/sku-bom.json    7 款 SKU + 57 行 BOM + 逐组件供应商与候选报价
+data/master/sku-quotes.json 40 条供应商报价（核价追溯）
+data/master/sku-bom.example.json  脱敏模板（可入库）
+        │  npm run sku:check
+        ▼
+   漂移检测 D1–D8，任一命中即退出码 1（发布脚本内强制 --strict）
+```
+
+为什么这么严：V9→V10 迁移时这份文件被人手改成「5 款 + 按占比拆分的占位 BOM」，
+与真实源静默漂移数周 —— SKU 数 7→5、暗戳戳 100ml 写成 50ml（成本却沿用 100ml 的）、
+综合单瓶成本 ¥14.59→¥16.79。当时 111 个测试全绿，因为**夹具和主数据一起错了**。
+现在的对策是两层：夹具逐字段对齐真实主数据（`skuMasterIntegrity.test.ts` 直接读真实
+文件交叉校验），主数据与源库由脚本比对。
+
+### 成本核算的两个口径（不要混用）
+
+| 口径 | 字段 | 当前加权值 | 用在哪 |
+|---|---|---|---|
+| **COGS**（不含试香卡/小样/一次性备案） | `unitCostCogs` | **¥14.59**/瓶 | 损益表、毛利、ROI |
+| **采购**（含试香卡） | `unitCost` | **¥14.91**/瓶 | 采购预算、现金流、补货金额、供应商集中度 |
+
+差 ¥0.32/瓶就是试香卡：它随每瓶发出，但本质是获客物料，计进 COGS 会系统性低估毛利。
+内核只暴露一个入口 `cogsUnitCost()`，表现层禁止内联成本公式（eslint 强制）。
 
 ## 测试夹具
 

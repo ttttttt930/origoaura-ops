@@ -21,6 +21,10 @@ echo "==> 当前分支  ${BRANCH}"
 # 1) 门禁 —— 红就别推
 npm run gate
 
+# 1b) SKU 主数据漂移 —— 主数据一旦与源库不一致，页面上的成本与毛利全是错的。
+#     --strict：本机必须挂得上源库，挂不上直接中止发布（不留"无法判断"的口子）。
+npm run sku:check -- --strict
+
 # 2) 远端
 if git remote get-url origin >/dev/null 2>&1; then
   echo "==> origin 已存在：$(git remote get-url origin)"

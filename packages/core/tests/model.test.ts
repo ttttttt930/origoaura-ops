@@ -13,7 +13,7 @@ import {
   snapshotFileName,
   supplierSummary,
 } from '../src/index.ts';
-import { septemberRecords, skuMaster } from './fixtures/dataset.ts';
+import { septemberRecords, skuMaster, SKU_MASTER_BASELINE } from './fixtures/dataset.ts';
 
 describe('C1 列名契约', () => {
   it('恰好 31 列，且 5 个平台 × 5 指标 + 6 个总计列', () => {
@@ -93,23 +93,30 @@ describe('供应商聚合 —— 修复 V9「供应商数恒为 0」', () => {
   it('从唯一的 SkuMaster.bom 派生，而不是读不存在的字段', () => {
     const rows = supplierSummary(skuMaster());
     const names = rows.map((r) => r.supplier);
-    expect(names).toContain('广州香精A厂');
-    expect(names).toContain('东莞包装E');
+    // 真实供应商（2026-09 报价表）：葵花 / 润园 / 竣彩 / 嘉华 / 墨艺 / 新丽光
+    expect(names).toContain('葵花');
+    expect(names).toContain('新丽光');
     expect(rows.every((r) => r.componentCount >= 1 && r.skuCount >= 1)).toBe(true);
-    // 东莞包装E 同时供「礼盒」与「试香卡版本2」，且覆盖全部 5 款 SKU
-    const dg = rows.find((r) => r.supplier === '东莞包装E');
-    expect(dg?.componentCount).toBe(2);
-    expect(dg?.skuCount).toBe(5);
+    // 新丽光只供「试香卡版本2」，但覆盖全部 7 款 SKU
+    const xl = rows.find((r) => r.supplier === '新丽光');
+    expect(xl?.componentCount).toBe(1);
+    expect(xl?.skuCount).toBe(SKU_MASTER_BASELINE.skuCount);
   });
 
-  it('采购金额按 unitCost × qty（不是 min_price）', () => {
+  it('采购金额按 unitCost（全口径）× qty —— 采购要真付试香卡的钱', () => {
+    const master = skuMaster();
+    const bleu = master.find((s) => s.sku === '不在场50ml')!;
+    const sneak = master.find((s) => s.sku === '暗戳戳100ml')!;
     const amount = purchaseAmount(
       [
         { sku: '不在场50ml', qty: 100 },
-        { sku: '暗戳戳50ml', qty: 50 },
+        { sku: '暗戳戳100ml', qty: 50 },
       ],
-      skuMaster(),
+      master,
     );
-    expect(amount).toBeCloseTo(14.59 * 100 + 23.08 * 50, 2);
+    // purchaseAmount 内部舍到分，故用 1 位小数容差
+    expect(amount).toBeCloseTo(bleu.unitCost * 100 + sneak.unitCost * 50, 1);
+    // 采购口径必须比 COGS 口径贵（差在小样）
+    expect(amount).toBeGreaterThan(bleu.unitCostCogs! * 100 + sneak.unitCostCogs! * 50);
   });
 });

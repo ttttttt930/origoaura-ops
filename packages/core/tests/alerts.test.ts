@@ -78,7 +78,7 @@ describe('经营预警', () => {
 
   it('库存断货 / 告急进入预警', () => {
     const inventory = inventoryCoverage(
-      [{ sku: '暗戳戳50ml', onHand: 0, inTransit: 0, leadTimeDays: 10, safetyDays: 7, asOf: TODAY }],
+      [{ sku: '暗戳戳100ml', onHand: 0, inTransit: 0, leadTimeDays: 10, safetyDays: 7, asOf: TODAY }],
       skuDailyRecords(),
       { today: TODAY },
     );

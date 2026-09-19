@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { buildWindow, deriveCosts, toCostBreakdown } from '../src/index.ts';
-import { buildDay, costPolicy, skuDailyRecords, skuMaster, TODAY } from './fixtures/dataset.ts';
+import {
+  buildDay,
+  costPolicy,
+  skuDailyRecords,
+  skuMaster,
+  SKU_MASTER_BASELINE,
+  TODAY,
+} from './fixtures/dataset.ts';
 
 describe('费用科目分解（税务申报口径）', () => {
   it('单平台单日：佣金 / 手续费 / 物流 / 推广 逐项手算校验', () => {
@@ -12,8 +19,8 @@ describe('费用科目分解（税务申报口径）', () => {
     expect(c.paymentFee).toBe(6); // 1000 × 0.6%
     expect(c.logistics).toBe(55); // 10 单 × ¥5.5
     expect(c.promotion).toBe(200);
-    // 无 SKU 明细 → 退化为综合单瓶成本估算，并如实标注
-    expect(c.material).toBeCloseTo(16.79 * 10, 2);
+    // 无 SKU 明细 → 退化为综合单瓶成本估算（COGS 口径 ¥14.59），并如实标注
+    expect(c.material).toBeCloseTo(SKU_MASTER_BASELINE.weightedUnitCostCogs * 10, 2);
     expect(c.quality).toBe('estimated');
     expect(c.assumptions.some((a) => a.includes('综合单瓶成本'))).toBe(true);
     expect(c.assumptions.some((a) => a.includes('一单一瓶'))).toBe(true);
@@ -41,8 +48,10 @@ describe('费用科目分解（税务申报口径）', () => {
       skuDaily: skuDailyRecords(),
     });
 
-    // 不在场 (6+9)×10×14.59 + 暗戳戳 (4+7)×10×23.08 + 西西里白橘 (3+2)×10×13.72
-    const expected = 150 * 14.59 + 110 * 23.08 + 50 * 13.72;
+    // COGS 口径逐 SKU 单瓶成本 × 件数，取值全部来自夹具（不硬编码，避免重演成本漂移）
+    const costOf = (sku: string) => skuMaster().find((s) => s.sku === sku)!.unitCostCogs!;
+    const expected =
+      150 * costOf('不在场50ml') + 110 * costOf('暗戳戳100ml') + 50 * costOf('西西里白橘50ml');
     expect(c.material).toBeCloseTo(expected, 2);
     expect(c.quality).toBe('exact');
     expect(c.assumptions.some((a) => a.includes('综合单瓶成本'))).toBe(false);

@@ -143,47 +143,88 @@ export function shiftDay(records: readonly DailyRecord[], fromDate: string, toDa
     .map((r) => ({ ...r, date: toDate, raw: { ...r.raw } }));
 }
 
-/** SKU 主数据（5 款在售，单位成本取 OA 报价核定值） */
+/**
+ * SKU 主数据夹具 —— **必须与 data/master/sku-bom.json 同源同值**（7 款）。
+ *
+ * 历史教训：V9→V10 迁移时夹具与主数据同时漂移到「5 款 + 拍脑袋成本」，
+ * 于是 111 个测试全绿，却没一个发现成本口径错了 —— 测试在给错误数据背书。
+ * 现在夹具逐字段对齐真实主数据，并由 skuMasterIntegrity.test.ts 在**本地**
+ * 直接读真实文件做交叉校验（该文件含供应商报价，不入库，故 CI 上跳过）。
+ */
 export function skuMaster(): SkuMaster[] {
+  /** 小样单价：不计入 COGS */
+  const SAMPLE_PRICE = 0.32;
+
   const mk = (
     sku: string,
+    spec: string,
     unitCost: number,
     defaultPrice: number,
     estMonthlyQty: number,
     productLine: string,
-  ): SkuMaster => ({
-    sku,
-    spec: '50ml',
-    productLine,
-    unitCost,
-    defaultPrice,
-    status: 'active',
-    estMonthlyQty,
-    costBasis: 'oa-2026-09',
-    bom: [
-      { name: '香精', qty: 1, unitPrice: round2(unitCost * 0.35), supplier: '广州香精A厂' },
-      { name: '酒精', qty: 1, unitPrice: round2(unitCost * 0.15), supplier: '深圳化工B' },
-      { name: '玻璃瓶', qty: 1, unitPrice: round2(unitCost * 0.2), supplier: '徐州玻璃C' },
-      { name: '喷头', qty: 1, unitPrice: round2(unitCost * 0.1), supplier: '余姚喷头D' },
-      { name: '礼盒', qty: 1, unitPrice: round2(unitCost * 0.2), supplier: '东莞包装E' },
-      { name: '试香卡版本2', qty: 1, unitPrice: 0.3, supplier: '东莞包装E', isSample: true },
-    ],
-  });
+  ): SkuMaster => {
+    // 与主数据一样保留 4 位小数：加权前先舍到 2 位会把 ¥14.59 压成 ¥14.58
+    const unitCostCogs = round4(unitCost - SAMPLE_PRICE);
+    // 按「不在场50ml」的真实结构占比拆分，差额并入包装盒，保证 BOM 求和 == unitCost
+    const weights = [0.5523, 0.0964, 0.0438, 0.0039, 0.0208, 0.228, 0.0548];
+    const vals = weights.map((w) => round4(unitCostCogs * w));
+    const drift = round4(unitCostCogs - vals.reduce((a, b) => a + b, 0));
+    vals[5] = round4(vals[5] + drift); // 差额并入「天地盖包装盒」
+
+    return {
+      sku,
+      spec,
+      productLine,
+      unitCost,
+      unitCostCogs,
+      defaultPrice,
+      status: 'active',
+      estMonthlyQty,
+      costBasis: 'supplier-quote-2026-09',
+      bomSource: 'verified',
+      bom: [
+        { name: '香水水体', qty: 1, unitPrice: vals[0], supplier: '葵花' },
+        { name: '蔚蓝方形菱角瓶50ml', qty: 1, unitPrice: vals[1], supplier: '润园' },
+        { name: '黑色电解铝喷头+吸管', qty: 1, unitPrice: vals[2], supplier: '葵花' },
+        { name: '透明pvc底标', qty: 1, unitPrice: vals[3], supplier: '葵花' },
+        { name: 'pvc标贴', qty: 1, unitPrice: vals[4], supplier: '竣彩' },
+        { name: '天地盖包装盒', qty: 1, unitPrice: vals[5], supplier: '嘉华' },
+        // 两瓶一袋，故 qty=0.5：unitPrice 要还原成整袋价
+        { name: 'OrigoAura TF礼品袋', qty: 0.5, unitPrice: round4(vals[6] * 2), supplier: '墨艺' },
+        { name: '试香卡版本2', qty: 1, unitPrice: SAMPLE_PRICE, supplier: '新丽光', isSample: true },
+      ],
+    };
+  };
+
   return [
-    mk('不在场50ml', 14.59, 198, 1200, 'Bleu Absent'),
-    mk('暗戳戳50ml', 23.08, 268, 800, 'Sneaky Link'),
-    mk('西西里白橘50ml', 13.72, 168, 600, 'Sicilian'),
-    mk('放过菲格夫人50ml', 15.4, 188, 400, 'Fig'),
-    mk('绽放50ml', 16.8, 228, 300, 'Bloom'),
+    mk('不在场50ml', '50ml', 11.7265, 198, 200, 'Bleu Absent'),
+    mk('晚点到50ml', '50ml', 14.9545, 168, 150, 'Sneaky Link'),
+    mk('含苞50ml', '50ml', 11.6895, 168, 150, 'Bloom'),
+    mk('绽放50ml', '50ml', 11.6895, 198, 250, 'Bloom'),
+    mk('暗戳戳100ml', '100ml', 23.4045, 268, 300, 'Sneaky Link'),
+    mk('西西里白橘50ml', '50ml', 10.9895, 188, 80, '限定'),
+    mk('放过菲格夫人50ml', '50ml', 10.8895, 188, 80, '限定'),
   ];
 }
+
+/**
+ * 真实主数据的标杆值 —— 由 scripts/sync-sku-master.mjs 从供应商报价表导出。
+ * 加权口径（按预估月销）：全口径 ¥14.91 / COGS 口径 ¥14.59，总月销 1210 瓶。
+ */
+export const SKU_MASTER_BASELINE = {
+  skuCount: 7,
+  totalEstMonthlyQty: 1210,
+  weightedUnitCost: 14.91,
+  weightedUnitCostCogs: 14.59,
+} as const;
 
 /** SKU × 平台 × 日（09-01 ~ 09-10，仅淘宝与抖音有数据） */
 export function skuDailyRecords(): SkuDaily[] {
   const out: SkuDaily[] = [];
   const mix: { sku: string; price: number; taobaoQty: number; douyinQty: number }[] = [
     { sku: '不在场50ml', price: 198, taobaoQty: 6, douyinQty: 9 },
-    { sku: '暗戳戳50ml', price: 268, taobaoQty: 4, douyinQty: 7 },
+    // 真实规格是 100ml（V10 曾误写成 50ml，导致 SKU 映射不上、毛利与分摊同时失真）
+    { sku: '暗戳戳100ml', price: 268, taobaoQty: 4, douyinQty: 7 },
     { sku: '西西里白橘50ml', price: 168, taobaoQty: 3, douyinQty: 2 },
   ];
   for (let d = 1; d <= 10; d += 1) {
@@ -265,8 +306,9 @@ export function taxParams(): TaxParams {
   };
 }
 
-function round2(v: number): number {
-  return Math.round((v + Number.EPSILON) * 100) / 100;
+/** 4 位小数：BOM 单价（如 0.0445）本身就是四位精度，加权前不得先舍到 2 位 */
+function round4(v: number): number {
+  return Math.round((v + Number.EPSILON) * 10000) / 10000;
 }
 
 /** 固定基准日，保证测试可复现 */

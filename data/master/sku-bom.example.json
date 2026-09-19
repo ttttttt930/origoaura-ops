@@ -1,79 +1,471 @@
 {
-  "_readme": "【脱敏模板】真实的 sku-bom.json 含供应商名称与逐组件核价，属于商业敏感数据，不入公开仓。新环境请 `cp sku-bom.example.json sku-bom.json` 后填入真实值。本模板的 unitCost / unitPrice 一律为 0，未填值前跑管道会得到全 0 物料成本。",
+  "_readme": "【脱敏模板】真实的 sku-bom.json 含供应商名称与逐组件核价，属商业敏感数据，不入公开仓。新环境请 `cp sku-bom.example.json sku-bom.json` 后填入真实值；若本机挂得上源库，直接跑 `npm run sku:sync` 更省事。本模板所有单价为 0，未填值前跑管道会得到全 0 物料成本（不会误报，但也不该拿去做决策）。由 scripts/sync-sku-master.mjs 自动生成，结构与真实主数据同步（7 款 SKU）。",
   "costBasis": "example",
   "bomSource": "placeholder",
+  "weightedUnitCost": 0,
+  "weightedUnitCostCogs": 0,
+  "totalEstMonthlyQty": 1210,
+  "quotePolicy": "min",
   "items": [
     {
-      "sku": "不在场50ml", "spec": "50ml", "productLine": "Bleu Absent",
-      "unitCost": 0, "defaultPrice": 198, "status": "active",
-      "estMonthlyQty": 1200, "costBasis": "example", "bomSource": "placeholder",
+      "sku": "不在场50ml",
+      "spec": "50ml",
+      "productLine": "Bleu Absent",
+      "position": "Bleu Absent 主推",
+      "launchDate": "2025-09",
+      "unitCost": 0,
+      "unitCostCogs": 0,
+      "defaultPrice": 198,
+      "status": "active",
+      "estMonthlyQty": 200,
+      "costBasis": "example",
+      "bomSource": "placeholder",
       "bom": [
-        { "name": "香精", "qty": 1, "unitPrice": 0, "supplier": "供应商A" },
-        { "name": "酒精(95%)", "qty": 1, "unitPrice": 0, "supplier": "供应商B" },
-        { "name": "玻璃瓶50ml", "qty": 1, "unitPrice": 0, "supplier": "供应商C" },
-        { "name": "喷头+瓶盖", "qty": 1, "unitPrice": 0, "supplier": "供应商D" },
-        { "name": "插画标签", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "外盒", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "礼品袋", "qty": 0.5, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "试香卡", "qty": 1, "unitPrice": 0, "supplier": "供应商E", "isSample": true }
+        {
+          "name": "不在场50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "蔚蓝方形菱角瓶50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "黑色电解铝喷头+吸管",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "透明pvc底标",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "pvc标贴不在场",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商C"
+        },
+        {
+          "name": "天地盖包装盒",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商D"
+        },
+        {
+          "name": "OrigoAura TF礼品袋",
+          "qty": 0.5,
+          "unitPrice": 0,
+          "supplier": "供应商E"
+        },
+        {
+          "name": "试香卡版本2",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商F",
+          "isSample": true
+        }
       ]
     },
     {
-      "sku": "暗戳戳50ml", "spec": "50ml", "productLine": "Sneaky Link",
-      "unitCost": 0, "defaultPrice": 268, "status": "active",
-      "estMonthlyQty": 800, "costBasis": "example", "bomSource": "placeholder",
+      "sku": "晚点到50ml",
+      "spec": "50ml",
+      "productLine": "Sneaky Link",
+      "position": "Sneaky Link 系列",
+      "launchDate": "2026-01",
+      "unitCost": 0,
+      "unitCostCogs": 0,
+      "defaultPrice": 168,
+      "status": "active",
+      "estMonthlyQty": 150,
+      "costBasis": "example",
+      "bomSource": "placeholder",
       "bom": [
-        { "name": "香精", "qty": 1, "unitPrice": 0, "supplier": "供应商A" },
-        { "name": "酒精(95%)", "qty": 1, "unitPrice": 0, "supplier": "供应商B" },
-        { "name": "方形黑色玻璃瓶50ml", "qty": 1, "unitPrice": 0, "supplier": "供应商C" },
-        { "name": "黑色方形瓶盖", "qty": 1, "unitPrice": 0, "supplier": "供应商D" },
-        { "name": "金属标贴", "qty": 1, "unitPrice": 0, "supplier": "供应商F" },
-        { "name": "磁吸套盒", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "礼品袋", "qty": 0.5, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "试香卡", "qty": 1, "unitPrice": 0, "supplier": "供应商E", "isSample": true }
+        {
+          "name": "晚点到50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "晚点到喷金瓶50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "金色普电解铝中套喷头吸管套",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "透明pvc底标",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "萨博特种纸标贴UV",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商G"
+        },
+        {
+          "name": "天地盖包装盒",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商D"
+        },
+        {
+          "name": "OrigoAura TF礼品袋",
+          "qty": 0.5,
+          "unitPrice": 0,
+          "supplier": "供应商E"
+        },
+        {
+          "name": "试香卡版本2",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商F",
+          "isSample": true
+        }
       ]
     },
     {
-      "sku": "西西里白橘50ml", "spec": "50ml", "productLine": "Sicilian",
-      "unitCost": 0, "defaultPrice": 168, "status": "active",
-      "estMonthlyQty": 600, "costBasis": "example", "bomSource": "placeholder",
+      "sku": "含苞50ml",
+      "spec": "50ml",
+      "productLine": "Bloom",
+      "position": "Bloom 系列",
+      "launchDate": "2026-03",
+      "unitCost": 0,
+      "unitCostCogs": 0,
+      "defaultPrice": 168,
+      "status": "active",
+      "estMonthlyQty": 150,
+      "costBasis": "example",
+      "bomSource": "placeholder",
       "bom": [
-        { "name": "香精", "qty": 1, "unitPrice": 0, "supplier": "供应商A" },
-        { "name": "酒精(95%)", "qty": 1, "unitPrice": 0, "supplier": "供应商B" },
-        { "name": "玻璃瓶50ml", "qty": 1, "unitPrice": 0, "supplier": "供应商C" },
-        { "name": "喷头+瓶盖", "qty": 1, "unitPrice": 0, "supplier": "供应商D" },
-        { "name": "插画标签", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "外盒", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "试香卡", "qty": 1, "unitPrice": 0, "supplier": "供应商E", "isSample": true }
+        {
+          "name": "含苞50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "蔚蓝方形菱角瓶50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "银色电解铝喷头+吸管",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "透明pvc底标",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "PVC标贴含苞绽放",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商C"
+        },
+        {
+          "name": "天地盖包装盒",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商D"
+        },
+        {
+          "name": "OrigoAura TF礼品袋",
+          "qty": 0.5,
+          "unitPrice": 0,
+          "supplier": "供应商E"
+        },
+        {
+          "name": "试香卡版本2",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商F",
+          "isSample": true
+        }
       ]
     },
     {
-      "sku": "放过菲格夫人50ml", "spec": "50ml", "productLine": "Fig",
-      "unitCost": 0, "defaultPrice": 188, "status": "active",
-      "estMonthlyQty": 400, "costBasis": "example", "bomSource": "placeholder",
+      "sku": "绽放50ml",
+      "spec": "50ml",
+      "productLine": "Bloom",
+      "position": "Bloom 主推",
+      "launchDate": "2025-09",
+      "unitCost": 0,
+      "unitCostCogs": 0,
+      "defaultPrice": 198,
+      "status": "active",
+      "estMonthlyQty": 250,
+      "costBasis": "example",
+      "bomSource": "placeholder",
       "bom": [
-        { "name": "香精", "qty": 1, "unitPrice": 0, "supplier": "供应商A" },
-        { "name": "酒精(95%)", "qty": 1, "unitPrice": 0, "supplier": "供应商B" },
-        { "name": "玻璃瓶50ml", "qty": 1, "unitPrice": 0, "supplier": "供应商C" },
-        { "name": "喷头+瓶盖", "qty": 1, "unitPrice": 0, "supplier": "供应商D" },
-        { "name": "插画标签", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "外盒", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "礼品袋", "qty": 0.5, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "试香卡", "qty": 1, "unitPrice": 0, "supplier": "供应商E", "isSample": true }
+        {
+          "name": "绽放50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "蔚蓝方形菱角瓶50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "银色电解铝喷头+吸管",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "透明pvc底标",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "PVC标贴含苞绽放",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商C"
+        },
+        {
+          "name": "天地盖包装盒",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商D"
+        },
+        {
+          "name": "OrigoAura TF礼品袋",
+          "qty": 0.5,
+          "unitPrice": 0,
+          "supplier": "供应商E"
+        },
+        {
+          "name": "试香卡版本2",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商F",
+          "isSample": true
+        }
       ]
     },
     {
-      "sku": "绽放50ml", "spec": "50ml", "productLine": "Bloom",
-      "unitCost": 0, "defaultPrice": 228, "status": "active",
-      "estMonthlyQty": 300, "costBasis": "example", "bomSource": "placeholder",
+      "sku": "暗戳戳100ml",
+      "spec": "100ml",
+      "productLine": "Sneaky Link",
+      "position": "Sneaky Link 主推",
+      "launchDate": "2025-08",
+      "unitCost": 0,
+      "unitCostCogs": 0,
+      "defaultPrice": 268,
+      "status": "active",
+      "estMonthlyQty": 300,
+      "costBasis": "example",
+      "bomSource": "placeholder",
       "bom": [
-        { "name": "香精", "qty": 1, "unitPrice": 0, "supplier": "供应商A" },
-        { "name": "酒精(95%)", "qty": 1, "unitPrice": 0, "supplier": "供应商B" },
-        { "name": "玻璃瓶50ml", "qty": 1, "unitPrice": 0, "supplier": "供应商C" },
-        { "name": "喷头+瓶盖", "qty": 1, "unitPrice": 0, "supplier": "供应商D" },
-        { "name": "插画标签", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "外盒", "qty": 1, "unitPrice": 0, "supplier": "供应商E" },
-        { "name": "试香卡", "qty": 1, "unitPrice": 0, "supplier": "供应商E", "isSample": true }
+        {
+          "name": "暗戳戳100ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "暗戳戳黑瓶100ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "圆柱加重abs黑瓶盖",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "银色电解铝中套+亮白磁吸套",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商H"
+        },
+        {
+          "name": "透明pvc底标",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "萨博特种纸标贴UV",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商G"
+        },
+        {
+          "name": "天地盖包装盒",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商D"
+        },
+        {
+          "name": "OrigoAura TF礼品袋",
+          "qty": 0.5,
+          "unitPrice": 0,
+          "supplier": "供应商E"
+        },
+        {
+          "name": "试香卡版本2",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商F",
+          "isSample": true
+        }
+      ]
+    },
+    {
+      "sku": "西西里白橘50ml",
+      "spec": "50ml",
+      "productLine": "限定",
+      "position": "限定款",
+      "launchDate": "2026-04",
+      "unitCost": 0,
+      "unitCostCogs": 0,
+      "defaultPrice": 188,
+      "status": "active",
+      "estMonthlyQty": 80,
+      "costBasis": "example",
+      "bomSource": "placeholder",
+      "bom": [
+        {
+          "name": "西西里白橘50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "蔚蓝方形菱角瓶50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "黑色电解铝喷头+吸管",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "透明pvc底标",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "PVC标贴含苞绽放",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商C"
+        },
+        {
+          "name": "天地盖包装盒",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商D"
+        },
+        {
+          "name": "OrigoAura TF礼品袋",
+          "qty": 0.5,
+          "unitPrice": 0,
+          "supplier": "供应商E"
+        },
+        {
+          "name": "试香卡版本2",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商F",
+          "isSample": true
+        }
+      ]
+    },
+    {
+      "sku": "放过菲格夫人50ml",
+      "spec": "50ml",
+      "productLine": "限定",
+      "position": "限定款",
+      "launchDate": "2026-05",
+      "unitCost": 0,
+      "unitCostCogs": 0,
+      "defaultPrice": 188,
+      "status": "active",
+      "estMonthlyQty": 80,
+      "costBasis": "example",
+      "bomSource": "placeholder",
+      "bom": [
+        {
+          "name": "放过菲格夫人50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "蔚蓝方形菱角瓶50ml",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商B"
+        },
+        {
+          "name": "黑色电解铝喷头+吸管",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "透明pvc底标",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商A"
+        },
+        {
+          "name": "PVC标贴含苞绽放",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商C"
+        },
+        {
+          "name": "天地盖包装盒",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商D"
+        },
+        {
+          "name": "OrigoAura TF礼品袋",
+          "qty": 0.5,
+          "unitPrice": 0,
+          "supplier": "供应商E"
+        },
+        {
+          "name": "试香卡版本2",
+          "qty": 1,
+          "unitPrice": 0,
+          "supplier": "供应商F",
+          "isSample": true
+        }
       ]
     }
   ]

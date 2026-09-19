@@ -11,11 +11,14 @@
 import './styles.css';
 import { h, mount } from './ui/dom.ts';
 import { LoadError, loadSnapshot, todayIso } from './data/load.ts';
-import { bootApp, PW_KEY } from './app.ts';
+import { applyStoredTheme, bootApp, PW_KEY } from './app.ts';
 import type { AppState } from './state.ts';
 
 const root = document.querySelector<HTMLElement>('#app');
 if (!root) throw new Error('缺少 #app 挂载点');
+
+// 首帧前落皮肤，避免先闪一下默认色再跳到用户选的那套
+applyStoredTheme();
 
 function bootShell(): void {
   root!.innerHTML = '';

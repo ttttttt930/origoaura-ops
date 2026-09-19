@@ -103,14 +103,20 @@ describe('单品真实毛利', () => {
     const rows = margins as Exclude<typeof margins, { kind: 'data-gap' }>;
 
     const tb = rows.find((m) => m.sku === '不在场50ml' && m.platform === 'taobao')!;
+    // 单瓶成本从夹具取，不硬编码 —— 硬编码就是上次成本漂移没被测试发现的原因
+    const bleuCogs = skuMaster().find((s) => s.sku === '不在场50ml')!.unitCostCogs!;
     expect(tb.qty).toBe(60); // 6 件/天 × 10 天
     expect(tb.revenue).toBeCloseTo(198 * 60, 2);
-    expect(tb.cogs).toBeCloseTo(14.59 * 60, 2);
+    expect(tb.cogs).toBeCloseTo(bleuCogs * 60, 2);
+    // COGS 口径必须**不含**试香卡：全口径会比它贵一个试香卡的钱
+    const bleuFull = skuMaster().find((s) => s.sku === '不在场50ml')!.unitCost;
+    expect(bleuFull).toBeGreaterThan(bleuCogs);
+    expect(tb.cogs).toBeLessThan(bleuFull * 60);
     expect(tb.commission).toBeCloseTo(198 * 60 * 0.05, 2);
     expect(tb.paymentFee).toBeCloseTo(198 * 60 * 0.006, 2);
     expect(tb.logistics).toBeCloseTo(60 * 5.5, 2);
     expect(tb.net).toBeCloseTo(
-      198 * 60 - 14.59 * 60 - 198 * 60 * 0.05 - 198 * 60 * 0.006 - 60 * 5.5,
+      198 * 60 - bleuCogs * 60 - 198 * 60 * 0.05 - 198 * 60 * 0.006 - 60 * 5.5,
       2,
     );
     expect(tb.grossMarginRate).toBeGreaterThan(0.9);
@@ -138,6 +144,31 @@ describe('单品真实毛利', () => {
       expect(sum).toBeCloseTo(amount, 1);
     }
     expect(rows.every((m) => m.assumptions.some((a) => a.includes('分摊')))).toBe(true);
+  });
+
+  it('未映射 SKU 不得分走推广费池（否则平台内分摊合计 < 池子，无法对账）', () => {
+    // 回归用例：曾经把未映射 SKU 也算进分摊分母，分完又在输出时丢弃，
+    // 结果 taobao 池 18000 只摊出去 11018.81 —— 差额凭空消失。
+    const withGhost = [
+      ...skuDailyRecords(),
+      ...Array.from({ length: 10 }, (_, i) => ({
+        date: `2026-09-${String(i + 1).padStart(2, '0')}`,
+        platform: 'taobao' as const,
+        sku: '外星人香水50ml',
+        qty: 50, // 故意给一个很大的销量，若参与分摊会明显抽走预算
+        avgPrice: 999,
+        refundQty: 0,
+        refundAmount: 0,
+      })),
+    ];
+    const rows = computeSkuMargins(withGhost, skuMaster(), costPolicy(), {
+      ...PERIOD,
+      platformPromotionPool: { taobao: 18_000 },
+    }) as Exclude<ReturnType<typeof computeSkuMargins>, { kind: 'data-gap' }>;
+
+    const taobaoSum = rows.filter((m) => m.platform === 'taobao').reduce((a, m) => a + m.promotion, 0);
+    expect(rows.some((m) => m.sku === '外星人香水50ml')).toBe(false);
+    expect(taobaoSum).toBeCloseTo(18_000, 2);
   });
 
   it('未映射到主数据的 SKU 不计入毛利（交由 DQ warn 提示）', () => {
@@ -196,9 +227,9 @@ describe('SKU 汇总视图', () => {
       { kind: 'data-gap' }
     >;
     const roll = rollupBySku(rows);
-    // 不在场：198 × 150 件 = 29,700；暗戳戳：268 × 110 件 = 29,480 —— 前者略高
+    // 不在场：198 × 150 件 = 29,700；暗戳戳100ml：268 × 110 件 = 29,480 —— 前者略高
     expect(roll[0]!.sku).toBe('不在场50ml');
-    expect(roll[1]!.sku).toBe('暗戳戳50ml');
+    expect(roll[1]!.sku).toBe('暗戳戳100ml');
     const bleu = roll.find((r) => r.sku === '不在场50ml')!;
     expect(bleu.qty).toBe(150); // (6+9) × 10 天
     expect(bleu.platformCount).toBe(2);

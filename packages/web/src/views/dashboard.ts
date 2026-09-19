@@ -13,26 +13,29 @@ import { areaChart, donut, barList } from '../ui/charts.ts';
 import { formatRatio, roiZoneLabel } from '../ui/format.ts';
 import { alerts, caveats, channelReport, periodResult, periodStrip } from './shared.ts';
 
-function heroCard(c: HeroCard): HTMLElement {
+/**
+ * Hero 卡（沿用 V9 的四卡条）：第一张为深蓝渐变主卡，其余浅底。
+ * 主卡放最关键的指标（营收），与老看板的信息层级一致。
+ */
+function heroCard(c: HeroCard, index: number): HTMLElement {
   const value =
     c.unit === 'currency'
       ? h('span', { class: 'hero__num' }, c.value === null ? '—' : money(c.value, 0))
       : h('span', { class: 'hero__num' }, c.value === null ? '—' : formatRatio(c.value));
 
+  const zone = index === 0 ? 'primary' : c.zone;
+
   return h(
     'section',
-    { class: `card hero${c.zone ? ` hero--${c.zone}` : ''}` },
-    h('p', { class: 'card__title' }, c.title),
+    { class: `card hero${zone ? ` hero--${zone}` : ''}` },
+    h(
+      'div',
+      { class: 'hero__head' },
+      h('span', { class: 'hero__label' }, c.title),
+      deltaChip(c.delta),
+    ),
     h('div', { class: 'hero__value' }, value, c.unit === 'currency' ? h('span', { class: 'hero__unit' }, '元') : null),
-    c.delta !== null || c.compareLabel
-      ? h(
-          'div',
-          { class: 'chips-inline', style: { margin: '0 0 6px' } },
-          deltaChip(c.delta),
-          h('span', { class: 'dim', style: { fontSize: '11.5px' } }, c.compareLabel),
-        )
-      : null,
-    h('p', { class: 'hero__sub' }, c.sub),
+    h('p', { class: 'hero__sub' }, c.compareLabel ? `${c.compareLabel}　` : '', c.sub),
   );
 }
 
@@ -65,7 +68,21 @@ export function renderDashboard(ctx: ViewContext): Node {
   return h(
     'div',
     {},
-    h('div', { class: 'grid grid--hero' }, ...cards.map(heroCard)),
+    h('div', { class: 'grid grid--hero' }, ...cards.map((c, i) => heroCard(c, i))),
+
+    // 六列 KPI 条（老看板的 .dkpis）：把收支六项平铺，一眼扫完，不必展开图表
+    h(
+      'div',
+      { class: 'grid grid--kpi', style: { marginTop: '14px' } },
+      ...costItems.map((it) =>
+        h(
+          'div',
+          { class: 'kpi' },
+          h('div', { class: 'kpi__label' }, it.label),
+          h('div', { class: 'kpi__value' }, it.display),
+        ),
+      ),
+    ),
 
     h('section', { class: 'section' }, sectionHead('时间口径'), h('div', { class: 'grid grid--2' },
       card(

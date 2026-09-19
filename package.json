@@ -20,6 +20,8 @@
     "coverage": "vitest run --coverage",
     "origo": "node --experimental-strip-types packages/pipeline/src/cli.ts",
     "build:web": "npm run build -w @origo/web",
+    "sku:sync": "node --no-warnings scripts/sync-sku-master.mjs",
+    "sku:check": "node --no-warnings scripts/check-sku-drift.mjs",
     "gate": "npm run typecheck && npm run lint && npm run test",
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo node_modules/.cache"
   },

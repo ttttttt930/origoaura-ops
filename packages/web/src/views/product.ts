@@ -11,14 +11,19 @@
  */
 
 import {
+  blendedPurchaseUnitCost,
+  blendedUnitCost,
   bomQuality,
   computeSkuMargins,
+  cogsUnitCost,
   isDataGap,
+  materialMarginRate,
   PLATFORM_LABEL,
   rollupBySku,
   skuPlatformBreakdown,
   type DataGap,
   type SkuMargin,
+  type SkuMaster,
 } from '@origo/core';
 import type { ViewContext } from '../state.ts';
 import { h, card, sectionHead, table, notes, tag, emptyState, money, num, formatPct } from '../ui/dom.ts';
@@ -77,9 +82,108 @@ export function renderProduct(ctx: ViewContext): Node {
       ),
     ),
 
+    costBasisSection(s.skuMaster),
+
     isDataGap(result)
       ? renderGap(result)
       : renderMargins(ctx, result as SkuMargin[]),
+  );
+}
+
+/**
+ * 成本构成（成本核算的可见产出）
+ *
+ * 双口径同屏展示是刻意的：采购看全口径（真金白银要付），损益看 COGS（不含小样）。
+ * 只显示一个数，迟早会有人拿采购口径去算毛利 —— 那正是 V9→V10 成本漂移的成因。
+ */
+function costBasisSection(master: readonly SkuMaster[]): HTMLElement {
+  if (!master.length) return h('div', {});
+
+  // 加权口径一律走内核（表现层不得内联成本公式，SAD §8）
+  const totalQty = master.reduce((a, m) => a + (m.estMonthlyQty ?? 0), 0);
+  const weightedCogs = blendedUnitCost(master).value;
+  const weightedFull = blendedPurchaseUnitCost(master);
+
+  const rows = master.map((m) => [
+    m.sku,
+    m.spec,
+    money(m.defaultPrice ?? 0, 0),
+    money(m.unitCost),
+    money(cogsUnitCost(m)),
+    num(m.estMonthlyQty ?? 0),
+    materialMarginRate(m) === null ? '—' : formatPct(materialMarginRate(m)! * 100),
+    String(m.bom?.length ?? 0),
+  ]);
+
+  // 逐组件核价明细：全部 SKU 的 BOM 摊平，带供应商与候选报价数（可审计）
+  const bomRows = master.flatMap((m) =>
+    (m.bom ?? []).map((b) => [
+      m.sku,
+      b.name,
+      String(b.qty),
+      money(b.unitPrice),
+      money(b.unitPrice * b.qty),
+      b.supplier ?? '—',
+      b.isSample ? h('span', { class: 'tag tag--est' }, '小样·不计 COGS') : '计入',
+      String(b.quotes?.length ?? 1),
+    ]),
+  );
+
+  return h(
+    'section',
+    { class: 'section' },
+    sectionHead('SKU 成本构成', '由 scripts/sync-sku-master.mjs 从供应商报价表导出 · 双口径'),
+    card(
+      h(
+        'div',
+        { class: 'grid grid--3' },
+        h(
+          'div',
+          {},
+          h('p', { class: 'kpi__label' }, '综合单瓶 · COGS 口径'),
+          h('div', { class: 'kpi__value c-blue' }, money(weightedCogs)),
+          h('p', { class: 'kpi__sub' }, '损益表用这个：不含试香卡 / 小样'),
+        ),
+        h(
+          'div',
+          {},
+          h('p', { class: 'kpi__label' }, '综合单瓶 · 采购口径'),
+          h('div', { class: 'kpi__value' }, money(weightedFull)),
+          h('p', { class: 'kpi__sub' }, '采购预算 / 现金流用这个：含试香卡'),
+        ),
+        h(
+          'div',
+          {},
+          h('p', { class: 'kpi__label' }, '预估月销（加权分母）'),
+          h('div', { class: 'kpi__value' }, `${num(totalQty)} 瓶`),
+          h('p', { class: 'kpi__sub' }, `${master.length} 款 SKU 按预估月销加权`),
+        ),
+      ),
+      table(
+        null,
+        ['SKU', '规格', '售价', '全口径', 'COGS', '月销', '物料毛利率', '组件数'],
+        rows,
+      ),
+      h('p', { class: 'card__note' }, '物料毛利率 =（售价 − COGS）/ 售价，未扣推广、佣金与物流 —— 不是净利率。'),
+    ),
+    card(
+      h('p', { class: 'card__title' }, '逐组件核价明细'),
+      h(
+        'div',
+        { style: { maxHeight: '380px', overflowY: 'auto' } },
+        table(
+          null,
+          ['SKU', '组件', '用量', '单价', '小计', '供应商', 'COGS 归属', '候选报价'],
+          bomRows,
+        ),
+      ),
+      h(
+        'p',
+        { class: 'card__note' },
+        '「候选报价」列 = 该组件在报价表里有几家供应商可选。多供应商时默认取最低价；' +
+          '全部候选价都保留在主数据里，换供应商只需重跑同步脚本，不用改代码。',
+      ),
+    ),
   );
 }
 
@@ -238,8 +342,9 @@ function renderMargins(ctx: ViewContext, margins: readonly SkuMargin[]): HTMLEle
           ? h('div', { class: 'chips-inline' }, ...allAssumptions.map((a) => tag(a, 'alloc')))
           : h('p', { class: 'card__note' }, '无近似假设：成本与推广均为直连实采值。'),
         notes([
-          '物料成本取 SkuMaster.unitCost（OA 供应商报价核定值，含包装），**永远不做等权估算**。',
-          '等权 / 加权估算只允许出现在驾驶舱的「综合单瓶成本」角标里，且必须打「估算」。',
+          '物料成本取 **COGS 口径** unitCostCogs（供应商报价逐组件核定，**不含**试香卡）；采购额另看全口径 unitCost。',
+          '两个口径差在试香卡（¥0.32/瓶）：它随瓶发出但属获客物料，计入 COGS 会系统性低估毛利。',
+          '单瓶成本**永远不做等权估算**；加权估算只允许出现在驾驶舱的「综合单瓶成本」角标里，且必须打「估算」。',
           '灌装 / 人工 / 包材损耗尚未取数，按 0 参与计算 —— 实际净利会低于本页数值。',
         ]),
       ),
