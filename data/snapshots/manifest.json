@@ -1,8 +1,17 @@
 {
   "schemaVersion": "10.0.0",
-  "current": "marketing-data.202609190506.js",
-  "previous": "marketing-data.202609190335.js",
+  "current": "marketing-data.202609190535.js",
+  "previous": "marketing-data.202609190506.js",
   "history": [
+    {
+      "file": "marketing-data.202609190535.js",
+      "generatedAt": "2026-09-19T05:35:19Z",
+      "period": {
+        "start": "2026-09-01",
+        "end": "2026-09-30"
+      },
+      "blockCount": 0
+    },
     {
       "file": "marketing-data.202609190506.js",
       "generatedAt": "2026-09-19T05:06:17Z",
