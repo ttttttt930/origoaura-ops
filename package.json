@@ -1,0 +1,33 @@
+{
+  "name": "origoaura-ops",
+  "version": "10.0.0",
+  "private": true,
+  "description": "OrigoAura / 时法经营看板 V10 — 单一事实源内核 + 构建期数据管道 + 静态 SPA",
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/pipeline",
+    "packages/web"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p packages/core && tsc --noEmit -p packages/pipeline && tsc --noEmit -p packages/web",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "origo": "node --experimental-strip-types packages/pipeline/src/cli.ts",
+    "build:web": "npm run build -w @origo/web",
+    "gate": "npm run typecheck && npm run lint && npm run test",
+    "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo node_modules/.cache"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "_readme": "【脱敏模板】真实文件里的月度营收/利润目标属于经营计划，不入公开仓。新环境请 `cp targets.example.json targets.json`。留空（null）则看板显示「未设置目标」并跳过达成率，不会臆造目标值。",
+  "monthlyRevenue": null,
+  "monthlyProfit": null,
+  "minRealRoi": 1.5,
+  "maxRefundRate": 8,
+  "maxPromoRate": 35
+}

@@ -1,0 +1,11 @@
+{
+  "_readme": "【脱敏模板】真实文件的 onHand/inTransit 是实际库存量，不入公开仓。新环境请 `cp inventory.example.json inventory.json` 后填入真实值。leadTimeDays / safetyDays / moq 属于计划参数，可保留。",
+  "asOfDefault": "2026-09-10",
+  "items": [
+    { "sku": "不在场50ml", "onHand": 0, "inTransit": 0, "leadTimeDays": 7, "safetyDays": 7, "asOf": "2026-09-10", "moq": 500 },
+    { "sku": "暗戳戳50ml", "onHand": 0, "inTransit": 0, "leadTimeDays": 12, "safetyDays": 7, "asOf": "2026-09-10", "moq": 500 },
+    { "sku": "西西里白橘50ml", "onHand": 0, "inTransit": 0, "leadTimeDays": 7, "safetyDays": 5, "asOf": "2026-09-10", "moq": 300 },
+    { "sku": "放过菲格夫人50ml", "onHand": 0, "inTransit": 0, "leadTimeDays": 7, "safetyDays": 5, "asOf": "2026-09-10", "moq": 300 },
+    { "sku": "绽放50ml", "onHand": 0, "inTransit": 0, "leadTimeDays": 10, "safetyDays": 7, "asOf": "2026-09-10", "moq": 300 }
+  ]
+}

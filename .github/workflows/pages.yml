@@ -1,0 +1,56 @@
+# 部署到 GitHub Pages（C6：只做静态托管，无后端）
+#
+# 为什么需要这个 workflow：
+#   dist/ 被 .gitignore 排除（构建产物不入仓），而 Pages 必须有一份可托管的产物，
+#   所以在 CI 里跑构建再上传。另一方面 data/snapshots/ 与 packages/web/public/ 是入仓的，
+#   快照随代码一起走 —— 历史快照不可变（C5），换版本靠 manifest 指回，不靠覆盖。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 门禁（类型检查 + lint + 测试）
+        run: npm run gate
+
+      - name: 构建静态站点
+        run: npm run build:web
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

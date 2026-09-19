@@ -1,0 +1,23 @@
+{
+  "_readme": "税务参数（ADR-09 外置）。政策有变动时改本文件即可。缺失该文件时管道会拒绝 build，而不是用猜测税率计算。",
+  "policyValidUntil": "2027-12-31",
+  "vatGeneralRate": 0.13,
+  "vatSmallRateNominal": 0.03,
+  "vatSmallRateActual": 0.01,
+  "smallExemptMonthly": 100000,
+  "smallExemptQuarterly": 300000,
+  "inputRateMaterial": 0.13,
+  "inputRateLogistics": 0.09,
+  "inputRatePromotion": 0.06,
+  "inputRateAnchor": 0.06,
+  "surtaxCityRate": 0.07,
+  "surtaxEduRate": 0.03,
+  "surtaxLocalEduRate": 0.02,
+  "surtaxHalved": true,
+  "stampDutyRate": 0.0003,
+  "stampDutyHalved": true,
+  "citSmallMicroRate": 0.05,
+  "citStatutoryRate": 0.25,
+  "citSmallMicroThreshold": 3000000,
+  "dividendTaxRate": 0.2
+}

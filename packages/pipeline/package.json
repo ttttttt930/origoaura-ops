@@ -1,0 +1,19 @@
+{
+  "name": "@origo/pipeline",
+  "version": "10.0.0",
+  "private": true,
+  "type": "module",
+  "description": "L4 数据管道 —— 采集适配 / 规范化 / DQ 网关 / 版本化快照（唯一可碰 IO 的层）",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "bin": {
+    "origo": "./bin/origo.mjs"
+  },
+  "scripts": {
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@origo/core": "10.0.0",
+    "xlsx": "^0.18.5"
+  }
+}

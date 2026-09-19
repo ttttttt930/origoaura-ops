@@ -1,0 +1,16 @@
+{
+  "_readme": "【脱敏模板】真实文件的费率是实测/谈定值，不入公开仓。新环境请 `cp platform-fees.example.json platform-fees.json` 后填入真实值。这里的数字仅为占位。",
+  "platformCommissionRate": {
+    "taobao": 0,
+    "douyin": 0,
+    "xiaohongshu": 0,
+    "tiktok": 0,
+    "pdd": 0
+  },
+  "paymentFeeRate": 0,
+  "logisticsPerOrder": 0,
+  "fillingPerUnit": 0,
+  "laborPerUnit": 0,
+  "packagingLossRate": 0,
+  "note": "占位模板：各平台扣点、支付费率、物流单价请按实际合同填写。灌装/人工/包材损耗未取数时保持 0，界面会标注「未计入」。"
+}

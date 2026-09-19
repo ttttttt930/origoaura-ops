@@ -1,0 +1,19 @@
+{
+  "name": "@origo/web",
+  "version": "10.0.0",
+  "private": true,
+  "type": "module",
+  "description": "L6 表现层 —— Vite + TS 静态 SPA（GitHub Pages）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@origo/core": "10.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.5"
+  }
+}
